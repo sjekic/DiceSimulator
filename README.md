@@ -5,5 +5,5 @@ This repository includes 2 programs:
 2. ASM code compatible with Arduino
 
 
-The first code works with 8 LEDs and simulates the number that was rolled in a binary manner (e.g. if a 2 is pseudo-randomly generated, only the second from the right LED will light up)
-The second code is compatible with Arduino and was modified accordingly - it uses 6 LEDs and represents numbers in the decimal format.
+The first code works with 8 LEDs and simulates the number that was rolled in a binary manner (e.g. if a 2 is pseudo-randomly generated, only the second from the right LED will light up) and was done as an individual assignment by Simonida Jekic.
+The second code is compatible with Arduino and was modified accordingly - it uses 6 LEDs and represents numbers in the decimal format and was a collaboration between Simonida Jekic and Sofiia Avetisian.
