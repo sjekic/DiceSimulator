@@ -1,0 +1,103 @@
+***** DeedsMcE Project File *****
+* If you read this message, you need to install the last version of Deeds! *
+FVR 3
+SYS 2
+CPU 1
+FCK 2
+ROM 4
+RAM 4
+PIA 0
+PIB 1
+PIC 2
+PID 3
+PIE 4
+PIF 5
+PIG 6
+PIH 7
+POA 0
+POB 1
+POC 2
+POD 3
+POE 4
+POF 5
+POG 6
+POH 7
+INT 007 SRC 002 PRT 000 TMD 001 TIN 019 EIN 003 
+INT 006 SRC 002 PRT 000 TMD 001 TIN 019 EIN 003 
+INT 005 SRC 002 PRT 000 TMD 001 TIN 019 EIN 003 
+INT 004 SRC 002 PRT 000 TMD 001 TIN 019 EIN 003 
+INT 003 SRC 002 PRT 000 TMD 001 TIN 019 EIN 003 
+INT 002 SRC 002 PRT 000 TMD 001 TIN 019 EIN 003 
+INT 001 SRC 002 PRT 000 TMD 001 TIN 019 EIN 003 
+INT 000 SRC 002 PRT 000 TMD 001 TIN 019 EIN 003 
+******* Project File END ********
+ORG 0000H
+;Origin at address 0000h, the register pair HL is stored in E000H and E001H, result stored in E002H and seed in E003H
+START:
+LD HL, 0E010H ;we load the HL register with the address E010H, this is where the progrsm will save the first roll of the dice
+LD (0E000H), HL ;this acts as a pointer, we load the address E000H (which is the first memory address of the RAM when we set ROM and RAM on 8k which is the default, at least on my version of Deeds)
+
+LD A, 01H      ;register A will store the seed which is initially set to 1, we need the seed to generate "random" numbers
+LD (0E003H), A ;then we load that value into the address E003H
+
+LD A, 00H    ;we set register A to 0 so we can clear out any value that can potentially be there already
+LD (0E002H), A   ;we save that 0 to address E002H          
+
+MAIN_LOOP:
+CALL ROLL_DICE ;jumps to the ROLL_DICE subroutine
+
+LD A, (0E002H) ;we store the number that was rolled in the address E002H
+OUT (00H), A ;we will also display it on the output port for LEDs so if we roll a 2 for example only one LED will light up (the second one from the right)
+
+LD HL, (0E000H) ;we access the pointer we created in the beginning of the program
+LD (HL), A ;the result is saved at the address which is pointed to by the pointer 
+INC HL  ;after that we will move to the next address and save the address in HL
+LD (0E000H), HL ;so now our pointer is moved to an address after it
+
+CP 06H   ;CP is used to compare the value given (in this case 6) with the value inside the register A 
+JP Z, ALARM ;so in case the dice "falls" to 6 the zero flag is set and the alarm goes off (it jumps to the alarm subroutine)
+
+JP MAIN_LOOP ;if that is not the case or when the alarm subroutine is finished it restarts the loop
+
+ROLL_DICE:  ;this is the aspect I encountered the most challenges with but in the end decided on this:
+LD A, (0E003H)   ;the current seed is loeaded into register A        
+INC A            ;then it is incremented by 1
+LD (0E003H), A   ;we load the new value back into A     
+
+RRC A            ;the bits are rotated to the right
+XOR 3AH          ;then they are mixed with the constant 3A     
+AND 07H          ;and in the end only the lowest 3 bits are kept    
+
+CP 06H           ;if the number is less than 6 we proceed     
+JP C, ADD_ONE    ;we add a 1    
+JP ROLL_DICE     ;if it is 6 or 7 we roll again     
+
+ADD_ONE:
+INC A               ;increases A by 1  
+LD (0E002H), A      ;stores the new value inside the address E002H  
+RET
+
+ALARM:
+LD B, 05H         ;sets the register B to 5, this acts as a counter
+
+ALARM_LOOP:
+LD A, 0FFH          ;loads the register A with 0FFH
+OUT (00H), A        ;the value 0FFH will be shown as 11111111 on the output port with LEDs meaning all of them will light up
+CALL SHORT_DELAY    ;then a short delay is called
+
+LD A, 00H          ;then we set register A to 00H
+OUT (00H), A       ;this will cause all LEDs to turn off
+CALL SHORT_DELAY   ;then we have a short delay again
+
+DEC B              ;we decrease the counter indicating one iteration is done
+JP NZ, ALARM_LOOP  ;if it is greater than 0 we repeat the process
+
+JP MAIN_LOOP       ;otherwise we start rolling the dice again
+
+SHORT_DELAY: 
+LD C, 0004H        ;register c is used also as a counter but for the short delay
+
+SD1:
+DEC C              ;decreases the counter in every iteration
+JP NZ, SD1         ;until it reaches 0
+RET                ;and then jumps to the code snippet after the one it jumped from
